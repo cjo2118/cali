@@ -1,20 +1,35 @@
 from enum import Enum
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy import Column, Float, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
 from database import Base
+
+class HangStatus(Enum):
+    PENDING = "pending"
+    CONFIRMED = "confirmed"
+    DECLINED = "declined"
 
 class Hang(Base):
     __tablename__ = "hang"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
+    status = Column(Enum(HangStatus))
     description = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     group_id = Column(Integer, ForeignKey("group.id"))
     group = relationship("Group", back_populates="hangs")
+    hang_start_time = Column(DateTime)
+    hang_end_time = Column(DateTime)
+    proposed_start_time = Column(DateTime)
+    proposed_end_time = Column(DateTime)
+    location_id = Column(Integer, ForeignKey("location.id"))
+    created_by_user_id = Column(Integer, ForeignKey("user.id"))
+    created_by_user = relationship("User", back_populates="hangs")
+    participants = relationship("User", secondary="hang_participant", back_populates="hangs")
+    location = relationship("Location", back_populates="hangs")
 
 
 class Group(Base):
@@ -80,6 +95,56 @@ class Favorite(Base):
     user_id = Column(Integer, ForeignKey("user.id"))
     hang_id = Column(Integer, ForeignKey("hang.id"))
     group_id = Column(Integer, ForeignKey("group.id"))
+    location_id = Column(Integer, ForeignKey("location.id"))
     created_by_user_id = Column(Integer, ForeignKey("user.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class Location(Base):
+    __tablename__ = "location"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    address = Column(String)
+    latitude = Column(Float)
+    longitude = Column(Float)
+
+class Poll(Base):
+    __tablename__ = "poll"
+
+    id = Column(Integer, primary_key=True, index=True)
+    hang_id = Column(Integer, ForeignKey("hang.id"))
+    group_id = Column(Integer, ForeignKey("group.id"))
+    location_id = Column(Integer, ForeignKey("location.id"))
+    created_by_user_id = Column(Integer, ForeignKey("user.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class PollOption(Base):
+    __tablename__ = "poll_option"
+
+    id = Column(Integer, primary_key=True, index=True)
+    poll_id = Column(Integer, ForeignKey("poll.id"))
+    option = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class PollVote(Base):
+    __tablename__ = "poll_vote"
+
+    id = Column(Integer, primary_key=True, index=True)
+    poll_id = Column(Integer, ForeignKey("poll.id"))
+    user_id = Column(Integer, ForeignKey("user.id"))
+    option_id = Column(Integer, ForeignKey("poll_option.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class Availability(Base):
+    __tablename__ = "availability"
+
+    id = Column(Integer, primary_key=True, index=True)
+    hang_id = Column(Integer, ForeignKey("hang.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    start_time = Column(DateTime)
+    end_time = Column(DateTime)
+
